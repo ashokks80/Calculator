@@ -27,8 +27,8 @@ jobs:
             <servers>
               <server>
                 <id>nexus</id>
-                <username>admin</username>
-                <password>Admin@123</password>
+                <username>username</username>
+                <password>password</password>
               </server>
             </servers>
           </settings>
