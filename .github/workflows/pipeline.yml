@@ -1,51 +1,38 @@
-
-name: Build and Push Java Artifact
+name: Build and Deploy to Nexus (Hardcoded Credentials)
 
 on:
   push:
     branches:
-      - main
-      - develop  # or whatever branch you push from
+      - master
 
 jobs:
-  build-and-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout source repository
+      - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Set up Java
         uses: actions/setup-java@v3
         with:
           distribution: 'temurin'
-          java-version: '17' # Change as per your project
+          java-version: '17'  # adjust to your project needs
 
-      - name: Build with Maven
-        run: mvn clean package -DskipTests
-
-      - name: Copy artifact
+      - name: Configure Maven settings with hardcoded Nexus credentials
         run: |
-          mkdir -p artifact
-          cp target/*.jar artifact/
+          mkdir -p ~/.m2
+          cat <<EOF > ~/.m2/settings.xml
+          <settings>
+            <servers>
+              <server>
+                <id>nexus</id>
+                <username>admin</username>
+                <password>Admin@123</password>
+              </server>
+            </servers>
+          </settings>
+          EOF
 
-      - name: Checkout target repository (Java-CI-CD)
-        uses: actions/checkout@v3
-        with:
-          repository: ashokks80/Java-CI-CD
-          ref: develop
-          token: ${{ secrets.PUSH_TOKEN }}
-          path: java-ci-cd-repo
-
-      - name: Copy artifact to target repo
-        run: |
-          cp artifact/*.jar java-ci-cd-repo/artifacts/
-
-      - name: Commit and push changes
-        run: |
-          cd java-ci-cd-repo
-          git config user.name "github-actions"
-          git config user.email "github-actions@github.com"
-          git add artifacts/*.jar
-          git commit -m "Add built Java artifact from CI"
-          git push origin develop
+      - name: Build and Deploy to Nexus
+        run: mvn clean deploy -DskipTests
