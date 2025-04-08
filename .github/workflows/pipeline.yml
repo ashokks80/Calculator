@@ -1,1 +1,51 @@
 
+name: Build and Push Java Artifact
+
+on:
+  push:
+    branches:
+      - main
+      - develop  # or whatever branch you push from
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source repository
+        uses: actions/checkout@v3
+
+      - name: Set up Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: 'temurin'
+          java-version: '17' # Change as per your project
+
+      - name: Build with Maven
+        run: mvn clean package -DskipTests
+
+      - name: Copy artifact
+        run: |
+          mkdir -p artifact
+          cp target/*.jar artifact/
+
+      - name: Checkout target repository (Java-CI-CD)
+        uses: actions/checkout@v3
+        with:
+          repository: ashokks80/Java-CI-CD
+          ref: develop
+          token: ${{ secrets.PUSH_TOKEN }}
+          path: java-ci-cd-repo
+
+      - name: Copy artifact to target repo
+        run: |
+          cp artifact/*.jar java-ci-cd-repo/artifacts/
+
+      - name: Commit and push changes
+        run: |
+          cd java-ci-cd-repo
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add artifacts/*.jar
+          git commit -m "Add built Java artifact from CI"
+          git push origin develop
