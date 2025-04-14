@@ -1,38 +1,84 @@
-name: Build and Deploy to Nexus (Hardcoded Credentials)
+name: CI-CD-Pipeline
 
 on:
   push:
     branches:
-      - master
+      - main
+      - develop
+      - qa
+      - 'feature/*'
+  pull_request:
+    branches:
+      - main
+      - develop
+      - qa
+      - 'feature/*'
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
+    - name: Checkout code
+      uses: actions/checkout@v3
 
-      - name: Set up Java
-        uses: actions/setup-java@v3
-        with:
-          distribution: 'temurin'
-          java-version: '17'  # adjust to your project needs
+    - name: Set up Java
+      run: echo "java"
 
-      - name: Configure Maven settings with hardcoded Nexus credentials
-        run: |
-          mkdir -p ~/.m2
-          cat <<EOF > ~/.m2/settings.xml
-          <settings>
-            <servers>
-              <server>
-                <id>nexus</id>
-                <username>${{ secrets.NEXUS_USERNAME }}</username>
-                <password>${{ secrets.NEXUS_PASSWORD }}</password>
-              </server>
-            </servers>
-          </settings>
-          EOF
+    - name: Build with Maven
+      run: echo "Maven Build completed"
+      
+    - name: SonarQube Scan
+      run: echo "SonarSource"
 
-      - name: Build and Deploy to Nexus
-        run: mvn clean deploy -DskipTests
+    - name: Snyk Scan
+      run: echo "snyk"
+
+    - name: Upload to Artifactory
+      run: echo "mvn deploy"
+
+    - name: DAST scan via Rapid7
+      run: echo "Dast Scan"
+
+    - name: Run QA Test Suite
+      if: github.event_name == 'pull_request' && github.base_ref == 'qa'
+      run: echo "QA test"
+
+    - name: Deploy to QA
+      if: github.ref == 'refs/heads/qa'
+      run: echo "Deploy to QA"
+
+    - name: Deploy to STG
+      if: github.ref == 'refs/heads/qa' && github.event_name == 'push'
+      run: echo "Deploy to STG"
+
+    - name: Automated UAT
+      if: github.ref == 'refs/heads/qa' && github.event_name == 'push'
+      run: echo "Automated UAT"
+
+    - name: Deploy to Develop Environment
+      if: (github.ref == 'refs/heads/develop' || startsWith(github.ref, 'refs/heads/feature/')) && github.event_name == 'push'
+      run: echo "Deploying to develop environment"
+
+    - name: Await Manual Merge Approval
+      if: github.ref == 'refs/heads/main'
+      environment:
+        name: production
+      run: echo "Approval granted. Proceeding with production release."
+
+
+    - name: Tag PRD Release
+      if: github.ref == 'refs/heads/main'
+      run: echo "PRD Release"
+
+    - name: Deploy to Production
+      if: github.ref == 'refs/heads/main'
+      run: echo "Deploy to Production"
+
+    - name: Post-PRD Smoke Test
+      if: github.ref == 'refs/heads/main'
+      run: echo "Post-PRD smoke test"
+
+    - name: Deployment to EKS Cluster (via ArgoCD)
+      if: github.ref == 'refs/heads/main'
+      run: echo "Deployment to EKS"
