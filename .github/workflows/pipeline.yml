@@ -62,8 +62,6 @@ jobs:
 
     - name: Await Manual Merge Approval
       if: github.ref == 'refs/heads/main'
-      environment:
-        name: production
       run: echo "Approval granted. Proceeding with production release."
 
 
